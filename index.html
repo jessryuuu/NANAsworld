@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NaNa's World</title>
+  <style>
+    /* ============================================================
+       防御性底模
+       ============================================================ */
+    *, *::before, *::after { box-sizing: border-box; }
+    img { max-width: none; display: block; }
+    body { margin: 0; padding: 0; overflow: hidden; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #FFD1E0;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    /* ============================================================
+       舞台容器
+       - 固定尺寸 2560 × 1440（设计稿画布尺寸）
+       - 通过 transform: scale() 等比缩放适配视口
+       - 所有子元素均以 px 绝对定位，严格对齐参考图
+       ============================================================ */
+    .stage {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 2560px;
+      height: 1440px;
+      transform-origin: top left;
+      /* 背景图 2560x1440 精确铺满 */
+      background-image: url('assets/首页.psd_0007_首页背景.png');
+      background-size: 2560px 1440px;
+      background-position: 0 0;
+      background-repeat: no-repeat;
+      overflow: visible;
+    }
+
+    /* ============================================================
+       通用精灵：绝对定位
+       ============================================================ */
+    .sprite {
+      position: absolute;
+      padding: 0;
+      margin: 0;
+    }
+    .sprite img {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* ============================================================
+       1. 标题 NaNa's World
+       left:783  top:104  w:994  h:490  z-index:10
+       ============================================================ */
+    .title {
+      left: 783px;
+      top: 104px;
+      width: 994px;
+      height: 490px;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    /* ============================================================
+       2. 门（关门/开门两张图叠加，瞬间切换，无过渡动画）
+       left:1133  top:744  w:294  h:327  z-index:20
+       ============================================================ */
+    .door-wrapper {
+      position: absolute;
+      left: 1133px;
+      top: 744px;
+      width: 294px;
+      height: 327px;
+      z-index: 20;
+      cursor: pointer;
+    }
+
+    /* 关门图、开门图都绝对定位在同一左上角，不做任何拉伸 */
+    .door-closed,
+    .door-opened {
+      position: absolute;
+      left: 0;
+      top: 0;
+      /* 无过渡动画，瞬间切换 */
+      transition: none;
+    }
+    /* 开门图与关门图严格保持一致定位 */
+    .door-opened {
+      left: 0;
+      top: 0;
+    }
+    .door-closed img,
+    .door-opened img {
+      position: absolute;
+      left: 0;
+      top: 0;
+      /* 保持原始尺寸，不缩放不拉伸 */
+      width: auto;
+      height: auto;
+      max-width: none;
+      display: block;
+    }
+    /* 开门图像素内容偏右下，向左上微调使其与关门图视觉重合 */
+    .door-opened img {
+      left: -135px;
+      top: -30px;
+    }
+
+    /* 默认：关门显示，开门隐藏（display 切换实现瞬间跳变） */
+    .door-closed { display: block; }
+    .door-opened { display: none; }
+
+    /* hover / active / open 时：关门隐藏，开门显示 —— 瞬间切换 */
+    .door-wrapper:hover .door-closed,
+    .door-wrapper.open .door-closed,
+    .door-wrapper:active .door-closed {
+      display: none;
+    }
+    .door-wrapper:hover .door-opened,
+    .door-wrapper.open .door-opened,
+    .door-wrapper:active .door-opened {
+      display: block;
+    }
+
+    /* ============================================================
+       3. enter 文字
+       left:1033  top:1071  w:421  h:93  z-index:20
+       ============================================================ */
+    .enter-text {
+      left: 1080px;
+      top: 1110px;
+      width: 421px;
+      height: 93px;
+      z-index: 20;
+      pointer-events: none;
+    }
+
+    /* ============================================================
+       4. 兔子（左侧装饰）
+       left:0  top:195  w:785  h:1185  opacity:0.25  z-index:5
+       ============================================================ */
+    .bunny {
+      left: -140px;
+      top: 195px;
+      width: 785px;
+      height: 1185px;
+      z-index: 5;
+      opacity: 0.25;
+      cursor: pointer;
+      /* 旋转以中心为原点，0.1s 平滑过渡 */
+      transform-origin: center center;
+      transition: transform 0.1s ease;
+    }
+
+    /* 按下时向右旋转 5°（!important 覆盖 fade-in 动画的 transform） */
+    .bunny.pressed {
+      transform: rotate(5deg) !important;
+    }
+
+    /* ============================================================
+       5. 小猫（右侧装饰）
+       left:1779  top:533  w:781  h:794  opacity:0.25  z-index:5
+       ============================================================ */
+    .cat {
+      left: 1919px;
+      top: 533px;
+      width: 781px;
+      height: 794px;
+      z-index: 5;
+      opacity: 0.25;
+      cursor: pointer;
+      /* 旋转以中心为原点，0.1s 平滑过渡 */
+      transform-origin: center center;
+      transition: transform 0.1s ease;
+    }
+
+    /* 按下时向左旋转 5°（!important 覆盖 fade-in 动画的 transform） */
+    .cat.pressed {
+      transform: rotate(-5deg) !important;
+    }
+
+    /* 兔子和小猫保持原始比例，不被拉伸；放大15% */
+    .bunny img {
+      object-fit: contain;
+      transform: scale(1.265);
+      transform-origin: left center;
+    }
+    .cat img {
+      object-fit: contain;
+      transform: scale(1.15);
+      transform-origin: right center;
+    }
+
+    /* ============================================================
+       入场淡入（逐级出现）
+       ============================================================ */
+    .fade-in {
+      animation: fadeIn 0.8s ease-out both;
+    }
+    .fade-in.d1 { animation-delay: 0.1s; }
+    .fade-in.d2 { animation-delay: 0.3s; }
+    .fade-in.d3 { animation-delay: 0.5s; }
+    .fade-in.d4 { animation-delay: 0.6s; }
+    .fade-in.d5 { animation-delay: 0.7s; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 标题的淡入带缩放 */
+    .title.fade-in {
+      animation: fadeInScale 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+      animation-delay: 0.1s;
+    }
+    @keyframes fadeInScale {
+      from { opacity: 0; transform: scale(0.85); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+    /* ============================================================
+       SPA 页面内容容器
+       ============================================================ */
+    #page-content {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+  </style>
+  <script src="music-bridge.js"></script>
+  <script src="nav.js"></script>
+</head>
+<body>
+
+  <!-- ============================================================
+       主舞台：2560 × 1440 像素画布
+       JS 会根据视口尺寸计算 scale，使画布等比缩放居中
+       ============================================================ -->
+  <div id="page-content">
+  <div class="stage" id="stage">
+
+    <!-- 1. 标题 -->
+    <div class="sprite title fade-in d1">
+      <img src="assets/首页.psd_0000_nanatitle.png" alt="NaNa's World" />
+    </div>
+
+    <!-- 2. 门（关门/开门两张图叠加，hover/点击时淡入淡出切换） -->
+    <div class="door-wrapper fade-in d2" id="door">
+      <div class="door-closed">
+        <img src="assets/首页.psd_0002_enter门（关）.png" alt="门-关闭" />
+      </div>
+      <div class="door-opened">
+        <img src="assets/首页.psd_0001_enter门（开）.png" alt="门-打开" />
+      </div>
+    </div>
+
+    <!-- 3. enter 文字 -->
+    <div class="sprite enter-text fade-in d3">
+      <img src="assets/首页.psd_0003_enter.png" alt="enter" />
+    </div>
+
+    <!-- 4. 兔子 -->
+    <div class="sprite bunny fade-in d4" id="bunny">
+      <img src="assets/首页_0005_首页兔子.png" alt="兔子" />
+    </div>
+
+    <!-- 5. 小猫 -->
+    <div class="sprite cat fade-in d5" id="cat">
+      <img src="assets/首页_0006_首页小猫.png" alt="小猫" />
+    </div>
+
+  </div>
+
+  </div>
+
+  <script>
+    /* ==============================================================
+       自适应缩放：保持 2560:1440 比例，等比缩放到视口内并居中
+       ============================================================== */
+    const stage = document.getElementById('stage');
+    const DESIGN_W = 2560;
+    const DESIGN_H = 1440;
+
+    function resizeStage() {
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const scale = Math.min(vw / DESIGN_W, vh / DESIGN_H);
+
+      // 缩放 + 居中
+      stage.style.transform =
+        `translate(${(vw - DESIGN_W * scale) / 2}px, ${(vh - DESIGN_H * scale) / 2}px) scale(${scale})`;
+    }
+
+    resizeStage();
+    window.addEventListener('resize', resizeStage);
+
+    /* ==============================================================
+       HTML5 Audio 音效管理器
+       使用真实音频文件，首次交互解锁
+       ============================================================== */
+    const Sound = (() => {
+      const doorAudio = new Audio('assets/点击音效.mp3');
+      const bunnyAudio = new Audio('assets/娜娜来啦.mp3');
+      const catAudio = new Audio('assets/自我介绍.mp3');
+
+      function doorClick() {
+        doorAudio.volume = 1;
+        doorAudio.currentTime = 0;
+        doorAudio.play().catch(() => {});
+      }
+
+      function bunnyHappy() {
+        bunnyAudio.volume = 1;
+        bunnyAudio.currentTime = 0;
+        bunnyAudio.play().catch(() => {});
+      }
+
+      function catSoft() {
+        catAudio.volume = 1;
+        catAudio.currentTime = 0;
+        catAudio.play().catch(() => {});
+      }
+
+      // 首次交互解锁音频（不预播放，避免与图标 click 中的 play 竞态）
+      var unlocked = false;
+      function unlock() {
+        var unlockOnce = function() { unlocked = true; };
+        document.addEventListener('click', unlockOnce, { once: true, capture: true });
+        document.addEventListener('touchstart', unlockOnce, { once: true, capture: true });
+        document.addEventListener('keydown', unlockOnce, { once: true, capture: true });
+      }
+
+      return { doorClick, bunnyHappy, catSoft, unlock };
+    })();
+
+    Sound.unlock();
+
+    /* ==============================================================
+       门交互
+       - hover: 开门动画（CSS :hover 实现）
+       - click: 播放音效 + 切换开门状态
+       ============================================================== */
+    const door = document.getElementById('door');
+    door.addEventListener('click', () => {
+      door.classList.toggle('open');
+      navigateTo('main');
+    });
+
+    /* ==============================================================
+       兔子交互
+       - mousedown / touchstart: 向右旋转 5° + 播放欢快音效
+       - mouseup / mouseleave / touchend: 恢复原位
+       ============================================================== */
+    const bunny = document.getElementById('bunny');
+
+    function bunnyPress() {
+      bunny.classList.add('pressed');
+      Sound.bunnyHappy();
+    }
+    function bunnyRelease() {
+      bunny.classList.remove('pressed');
+    }
+
+    bunny.addEventListener('mousedown', bunnyPress);
+    bunny.addEventListener('mouseup', bunnyRelease);
+    bunny.addEventListener('mouseleave', bunnyRelease);
+
+    bunny.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      bunnyPress();
+    }, { passive: false });
+    bunny.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      bunnyRelease();
+    }, { passive: false });
+    bunny.addEventListener('touchcancel', (e) => {
+      e.preventDefault();
+      bunnyRelease();
+    }, { passive: false });
+
+    /* ==============================================================
+       小猫交互
+       - mousedown / touchstart: 向左旋转 5° + 播放柔和音效
+       - mouseup / mouseleave / touchend: 恢复原位
+       ============================================================== */
+    const cat = document.getElementById('cat');
+
+    function catPress() {
+      cat.classList.add('pressed');
+      Sound.catSoft();
+    }
+    function catRelease() {
+      cat.classList.remove('pressed');
+    }
+
+    cat.addEventListener('mousedown', catPress);
+    cat.addEventListener('mouseup', catRelease);
+    cat.addEventListener('mouseleave', catRelease);
+
+    cat.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      catPress();
+    }, { passive: false });
+    cat.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      catRelease();
+    }, { passive: false });
+    cat.addEventListener('touchcancel', (e) => {
+      e.preventDefault();
+      catRelease();
+    }, { passive: false });
+
+    /* ==============================================================
+       页面可见性变化（性能优化）
+       ============================================================== */
+    document.addEventListener('visibilitychange', () => {
+      stage.style.visibility = document.hidden ? 'hidden' : 'visible';
+    });
+  </script>
+</body>
+</html>
