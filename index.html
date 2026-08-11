@@ -227,6 +227,26 @@
     }
 
     /* ============================================================
+       观前须知遮罩
+       ============================================================ */
+    #notice-overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.2);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    #notice-overlay img {
+      pointer-events: none;
+      max-width: 90vw;
+      max-height: 90vh;
+    }
+
+    /* ============================================================
        SPA 页面内容容器
        ============================================================ */
     #page-content {
@@ -242,6 +262,11 @@
   <script src="nav.js"></script>
 </head>
 <body>
+
+  <!-- 观前须知遮罩 -->
+  <div id="notice-overlay">
+    <img src="assets/notice.png" alt="观前须知">
+  </div>
 
   <!-- ============================================================
        主舞台：2560 × 1440 像素画布
@@ -285,6 +310,15 @@
   </div>
 
   <script>
+    /* ==============================================================
+       观前须知遮罩：点击任意位置消失
+       ============================================================== */
+    document.getElementById('notice-overlay').addEventListener('click', function() {
+      var s = new Audio('assets/点击音效.mp3');
+      s.play().catch(function(){});
+      this.style.display = 'none';
+    });
+
     /* ==============================================================
        自适应缩放：保持 2560:1440 比例，等比缩放到视口内并居中
        ============================================================== */
