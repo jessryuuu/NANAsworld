@@ -266,6 +266,7 @@ html, body {
                 <img src="assets/生日贺图_0002_生日2026.png" alt="" style="display:block;width:auto;height:auto;">
                 <div class="photo-stack" data-icon="0002" style="position:absolute;left:50%;top:50%;transform:translate(-50%,calc(-50% - 70px)) scale(0.70125);width:1346px;height:939px;z-index:5;pointer-events:none;">
 <img class="shadow-caster" src="" alt="">
+<img class="stack-photo" src="assets/生日贺图_0002_2026-01.jpg" alt="" style="transform: translate(-50%,-50%) rotate(-3deg);">
 </div>
                 <div class="arr-left" data-icon="0002" style="position:absolute;top:50%;transform:translateY(-50%);z-index:30;color:#493434;font-size:47.04px;cursor:pointer;user-select:none;font-family:sans-serif;line-height:1;padding:8px 4px;pointer-events:auto;">◀</div>
                 <div class="arr-right" data-icon="0002" style="position:absolute;top:50%;transform:translateY(-50%);z-index:30;color:#493434;font-size:47.04px;cursor:pointer;user-select:none;font-family:sans-serif;line-height:1;padding:8px 4px;pointer-events:auto;">▶</div>
